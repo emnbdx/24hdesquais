@@ -29,8 +29,8 @@ function capitalizeFirstLetter($dateStr)
 }
 
 $times = [];
-$start = new DateTime('2026-05-01 18:00:00');
-$end = new DateTime('2026-05-02 17:59:59');
+$start = new DateTime('2026-05-08 18:00:00');
+$end = new DateTime('2026-05-09 17:59:59');
 
 while ($start <= $end) {
     $timeString = $start->format('Y-m-d H:i:s');
@@ -621,7 +621,7 @@ for ($i = 0; $i < 24; $i++) {
             </div>
 
             <div class="hero-info">
-                <div>▶️ 1 mai 2026 à 18h</div>
+                <div>▶️ 8 mai 2026 à 18h</div>
                 <div>📍 Quai des Queyries, Rive Droite</div>
                 <div>⏹️ 24h plus tard !</div>
             </div>
@@ -721,7 +721,7 @@ for ($i = 0; $i < 24; $i++) {
                         <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem;">
                             <span style="font-size: 1.5rem;">🕐</span>
                             <div>
-                                <p style="font-weight: 600;">Départ : 1 mai 2026 à 18h</p>
+                                <p style="font-weight: 600;">Départ : 8 mai 2026 à 18h</p>
                                 <p style="color: var(--muted-foreground);">Un nouveau tour démarre chaque heure pile</p>
                             </div>
                         </div>
@@ -750,7 +750,7 @@ for ($i = 0; $i < 24; $i++) {
                 <?php foreach ($timeSlots as $index => $slot): ?>
                     <?php
                     $hour = ($startHour + $index) % 24;
-                    $day = $index < 6 ? '2026-05-01' : '2026-05-02';
+                    $day = $index < 6 ? '2026-05-08' : '2026-05-09';
                     $timeString = $day . ' ' . str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00:00';
                     $participants = $data[$timeString] ?? [];
                     ?>
@@ -797,7 +797,7 @@ for ($i = 0; $i < 24; $i++) {
                 <div class="footer-section">
                     <h4>Informations Pratiques</h4>
                     <ul>
-                        <li>📅 1-2 Mai 2026</li>
+                        <li>📅 8-9 Mai 2026</li>
                         <li>📍 Quai des Queyries</li>
                         <li>🏃‍♂️ 6,8 km par tour</li>
                         <li>⏰ 24 heures non-stop</li>
