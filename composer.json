@@ -1,0 +1,9 @@
+{
+    "require": {
+        "vlucas/phpdotenv": "^5.6.2",
+        "getbrevo/brevo-php": "^2.0.13"
+    },
+    "autoload": {
+        "files": []
+    }
+}

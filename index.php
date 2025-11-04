@@ -1,23 +1,84 @@
 <?php
+require_once __DIR__ . '/vendor/autoload.php';
+
+use Brevo\Client\Configuration;
+use Brevo\Client\Api\TransactionalEmailsApi;
+use Brevo\Client\Model\SendSmtpEmail;
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
 $file = 'data.json';
 $data = json_decode(file_get_contents($file), true) ?: [];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['time']) && !empty($_POST['name'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
 
-    $time = $_POST['time'];
-    $name = strip_tags($_POST['name']);
+    if ($_POST['action'] === 'contact') {
+        $name = strip_tags($_POST['name'] ?? '');
+        $email = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
+        $message = strip_tags($_POST['message'] ?? '');
 
-    if (in_array($name, $data[$time] ?? [])) {
-        echo json_encode(['success' => false, 'message' => 'Vous êtes déjà inscrit à ce créneau']);
+        if (empty($name) || empty($email) || empty($message) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'Veuillez remplir tous les champs correctement.']);
+            exit;
+        }
+
+        $brevoApiKey = $_ENV['BREVO_API_KEY'];
+
+        if (empty($brevoApiKey)) {
+            echo json_encode(['success' => false, 'message' => 'Configuration email non disponible.']);
+            exit;
+        }
+
+        try {
+            $config = Configuration::getDefaultConfiguration()->setApiKey('api-key', $brevoApiKey);
+            $apiInstance = new TransactionalEmailsApi(new \GuzzleHttp\Client(), $config);
+
+            $data = [
+                'subject' => 'Contact - 24h des Quais de Bordeaux',
+                'sender' => [
+                    'name' => '24h des Quais de Bordeaux',
+                    'email' => 'contact@24hdesquais.fr'
+                ],
+                'to' => [
+                    [
+                        'email' => 'eddy.montus@gmail.com'
+                    ]
+                ],
+                'htmlContent' => '<p><strong>Nom:</strong> ' . htmlspecialchars($name) . '</p>' .
+                    '<p><strong>Email:</strong> ' . htmlspecialchars($email) . '</p>' .
+                    '<p><strong>Message:</strong></p>' .
+                    '<p>' . nl2br(htmlspecialchars($message)) . '</p>',
+                'replyTo' => [
+                    'email' => $email,
+                    'name' => $name
+                ]
+            ];
+
+            $result = $apiInstance->sendTransacEmail($data);
+            echo json_encode(['success' => true, 'message' => 'Message envoyé avec succès !']);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'envoi du message.']);
+        }
         exit;
     }
 
-    $data[$time][] = $name;
-    file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    if (isset($_POST['time']) && !empty($_POST['name'])) {
+        $time = $_POST['time'];
+        $name = strip_tags($_POST['name']);
 
-    echo json_encode(['success' => true, 'message' => "Inscription confirmée ! 🎉", 'participants' => $data[$time]]);
-    exit;
+        if (in_array($name, $data[$time] ?? [])) {
+            echo json_encode(['success' => false, 'message' => 'Vous êtes déjà inscrit à ce créneau']);
+            exit;
+        }
+
+        $data[$time][] = $name;
+        file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+        echo json_encode(['success' => true, 'message' => "Inscription confirmée ! 🎉", 'participants' => $data[$time]]);
+        exit;
+    }
 }
 
 $fmt = new IntlDateFormatter('fr_FR', IntlDateFormatter::NONE, IntlDateFormatter::NONE);
@@ -600,6 +661,111 @@ for ($i = 0; $i < 24; $i++) {
             opacity: 0.5;
             cursor: not-allowed;
         }
+
+        .popup-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fade-in 0.3s ease-out;
+        }
+
+        .popup-overlay.active {
+            display: flex;
+        }
+
+        .popup-content {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: fade-in 0.3s ease-out;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .popup-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--foreground);
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+
+        .popup-close:hover {
+            background: var(--muted);
+        }
+
+        .popup-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--primary), hsl(200, 80%, 45%));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .contact-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .contact-form textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--background);
+            color: var(--foreground);
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .contact-form textarea:focus {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--primary), hsl(200, 80%, 45%));
+            color: var(--primary-foreground);
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            box-shadow: 0 0 20px hsla(185, 85%, 55%, 0.4);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 
@@ -805,17 +971,31 @@ for ($i = 0; $i < 24; $i++) {
                 </div>
                 <div class="footer-section">
                     <h4>Contact</h4>
-                    <p style="color: var(--muted-foreground);">
+                    <p style="color: var(--muted-foreground); margin-bottom: 1rem;">
                         Pour toute question ou information supplémentaire,
                         venez nous voir sur place ou rejoignez-nous directement !
                     </p>
+                    <a href="#" id="contactLink" style="color: var(--primary); text-decoration: underline; cursor: pointer;">Nous contacter</a>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>© 2024 24h des Quais de Bordeaux. Un défi humain exceptionnel.</p>
+                <p>© <?= date('Y') ?> 24h des Quais de Bordeaux. Un défi humain exceptionnel.</p>
             </div>
         </div>
     </footer>
+
+    <div class="popup-overlay" id="contactPopup">
+        <div class="popup-content">
+            <button class="popup-close" id="closePopup">&times;</button>
+            <h2 class="popup-title">Nous contacter</h2>
+            <form class="contact-form" id="contactForm">
+                <input type="text" class="input" name="name" placeholder="Votre nom" required>
+                <input type="email" class="input" name="email" placeholder="Votre email" required>
+                <textarea name="message" placeholder="Votre message" required></textarea>
+                <button type="submit" class="btn btn-submit">Envoyer</button>
+            </form>
+        </div>
+    </div>
 
     <script>
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -876,6 +1056,7 @@ for ($i = 0; $i < 24; $i++) {
                 const button = form.querySelector('button');
                 const input = form.querySelector('input[name="name"]');
 
+                formData.append('action', 'register');
                 formData.append('time', time);
 
                 const originalButtonText = button.textContent;
@@ -904,6 +1085,78 @@ for ($i = 0; $i < 24; $i++) {
                     button.textContent = originalButtonText;
                 }
             });
+        });
+
+        const contactLink = document.getElementById('contactLink');
+        const contactPopup = document.getElementById('contactPopup');
+        const closePopup = document.getElementById('closePopup');
+        const contactForm = document.getElementById('contactForm');
+
+        function openPopup() {
+            contactPopup.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePopupHandler() {
+            contactPopup.classList.remove('active');
+            document.body.style.overflow = '';
+            contactForm.reset();
+        }
+
+        contactLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            openPopup();
+        });
+
+        closePopup.addEventListener('click', closePopupHandler);
+
+        contactPopup.addEventListener('click', (e) => {
+            if (e.target === contactPopup) {
+                closePopupHandler();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && contactPopup.classList.contains('active')) {
+                closePopupHandler();
+            }
+        });
+
+        contactForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(contactForm);
+            formData.append('action', 'contact');
+
+            const button = contactForm.querySelector('button[type="submit"]');
+            const originalButtonText = button.textContent;
+
+            button.disabled = true;
+            button.textContent = 'Envoi...';
+
+            try {
+                const response = await fetch('', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    contactForm.reset();
+                    setTimeout(() => {
+                        closePopupHandler();
+                    }, 1500);
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (error) {
+                showToast('Erreur lors de l\'envoi du message. Veuillez réessayer.', 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = originalButtonText;
+            }
         });
     </script>
 </body>
