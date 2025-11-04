@@ -1,0 +1,12 @@
+<FilesMatch "^\.env">
+    Require all denied
+</FilesMatch>
+
+<Files ".env*">
+    Require all denied
+</Files>
+
+RewriteEngine On
+RewriteCond %{REQUEST_URI} ^.*/vendor/.*$ [NC]
+RewriteRule ^.*$ - [F,L]
+

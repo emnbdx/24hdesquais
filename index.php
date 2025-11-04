@@ -829,19 +829,58 @@ for ($i = 0; $i < 24; $i++) {
 
             <div style="max-width: 56rem; margin: 0 auto;">
                 <div class="card gradient-bg-card">
-                    <h3 style="font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; color: var(--primary);">L'Objectif</h3>
+                    <h3 style="font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; color: var(--primary);">L'Objectif & Les Règles</h3>
                     <div style="font-size: 1.125rem; line-height: 1.8;">
-                        <p style="margin-bottom: 1rem;">
+                        <p style="margin-bottom: 1.5rem;">
                             🌟 Ce défi n'est pas qu'une performance personnelle, c'est un événement
                             qui rassemble une communauté autour de valeurs fortes.
                         </p>
-                        <p style="margin-bottom: 1rem;">
+                        <p style="margin-bottom: 1.5rem;">
                             🎉 Rejoignez cette aventure en réservant un créneau pour courir et
                             célébrer ensemble la solidarité et l'endurance humaine !
                         </p>
-                        <p style="color: var(--accent); font-weight: 600;">
-                            Stay tuned pour la suite de cette histoire...
+                        <p style="margin-bottom: 1.5rem;">
+                            🤝 Il est possible — et même conseillé — d'accompagner les participant·e·s en vous inscrivant sur un créneau, que ce soit pour un ou plusieurs tours.
+                            Venez partager l'expérience, soutenir les participant·es et vivre ce moment ensemble !
                         </p>
+                        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border);">
+                            <h4 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1.5rem; color: var(--primary);">Modalités de Participation</h4>
+                            <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem;">
+                                <span style="font-size: 1.5rem;">🕐</span>
+                                <div>
+                                    <p style="font-weight: 600;">Départ : 1 mai 2026 à 18h</p>
+                                    <p style="color: var(--muted-foreground);">Un nouveau tour démarre chaque heure pile</p>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem;">
+                                <span style="font-size: 1.5rem;">🎯</span>
+                                <div>
+                                    <p style="font-weight: 600;">Arrivée : 2 mai 2026 à 18h</p>
+                                    <p style="color: var(--muted-foreground);">Le·la gagnant·e sera le premier à arriver</p>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem;">
+                                <span style="font-size: 1.5rem;">🚶‍♂️</span>
+                                <div>
+                                    <p style="font-weight: 600;">Full Autonomie</p>
+                                    <p style="color: var(--muted-foreground);">Cet événement se déroule en full autonomie. Chaque participant·e est responsable de sa propre organisation, de son ravitaillement et de sa sécurité.</p>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem;">
+                                <span style="font-size: 1.5rem;">🎯</span>
+                                <div>
+                                    <p style="font-weight: 600;">Les Règles Backyard</p>
+                                    <p style="color: var(--muted-foreground);">Chaque participant·e doit terminer son tour avant le début du suivant. Un nouveau départ a lieu chaque heure pile.</p>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                <span style="font-size: 1.5rem;">🏆</span>
+                                <div>
+                                    <p style="font-weight: 600;">Le Dernier Tour</p>
+                                    <p style="color: var(--muted-foreground);">Contrairement au Backyard Ultra, lors du dernier tour (le 24ème), le gagnant sera le premier à arriver. Pas de "Last Person Standing", mais une course pour la victoire !</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -886,20 +925,6 @@ for ($i = 0; $i < 24; $i++) {
                         </div>
                         <div style="margin-bottom: 1.5rem; text-align: center;">
                             <img src="parking.jpeg" alt="Parking de la Belle Saison" style="width: 100%; max-width: 600px; border-radius: var(--radius); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);">
-                        </div>
-                        <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem;">
-                            <span style="font-size: 1.5rem;">🕐</span>
-                            <div>
-                                <p style="font-weight: 600;">Départ : 1 mai 2026 à 18h</p>
-                                <p style="color: var(--muted-foreground);">Un nouveau tour démarre chaque heure pile</p>
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
-                            <span style="font-size: 1.5rem;">🎯</span>
-                            <div>
-                                <p style="font-weight: 600;">Les Règles Backyard</p>
-                                <p style="color: var(--muted-foreground);">Chaque participant·e doit terminer son tour avant le début du suivant</p>
-                            </div>
                         </div>
                     </div>
                 </div>
