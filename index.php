@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $name = strip_tags($_POST['name']);
 
         if (in_array($name, $data[$time] ?? [])) {
-            echo json_encode(['success' => false, 'message' => 'Vous êtes déjà inscrit à ce créneau']);
+            echo json_encode(['success' => false, 'message' => 'Vous êtes déjà inscrit·e à ce créneau']);
             exit;
         }
 
@@ -884,6 +884,9 @@ for ($i = 0; $i < 24; $i++) {
                                 <p style="color: var(--muted-foreground);">Devant le parking de la Belle Saison (van Volkswagen blanc)</p>
                             </div>
                         </div>
+                        <div style="margin-bottom: 1.5rem; text-align: center;">
+                            <img src="parking.jpeg" alt="Parking de la Belle Saison" style="width: 100%; max-width: 600px; border-radius: var(--radius); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);">
+                        </div>
                         <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem;">
                             <span style="font-size: 1.5rem;">🕐</span>
                             <div>
@@ -895,7 +898,7 @@ for ($i = 0; $i < 24; $i++) {
                             <span style="font-size: 1.5rem;">🎯</span>
                             <div>
                                 <p style="font-weight: 600;">Les Règles Backyard</p>
-                                <p style="color: var(--muted-foreground);">Chaque participant doit terminer son tour avant le début du suivant</p>
+                                <p style="color: var(--muted-foreground);">Chaque participant·e doit terminer son tour avant le début du suivant</p>
                             </div>
                         </div>
                     </div>
@@ -934,7 +937,7 @@ for ($i = 0; $i < 24; $i++) {
 
                         <div class="participants-list" id="participants-<?= $slot['id'] ?>">
                             <?php if (!empty($participants)): ?>
-                                <p class="participants-title">Participants :</p>
+                                <p class="participants-title">Participant·e·s :</p>
                                 <ul>
                                     <?php foreach ($participants as $participant): ?>
                                         <li><?= htmlspecialchars($participant) ?></li>
@@ -1042,7 +1045,7 @@ for ($i = 0; $i < 24; $i++) {
                 ul.appendChild(li);
             });
 
-            container.innerHTML = '<p class="participants-title">Participants :</p>';
+            container.innerHTML = '<p class="participants-title">Participant·e·s :</p>';
             container.appendChild(ul);
         }
 
