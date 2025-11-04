@@ -3,7 +3,6 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 use Brevo\Client\Configuration;
 use Brevo\Client\Api\TransactionalEmailsApi;
-use Brevo\Client\Model\SendSmtpEmail;
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
@@ -20,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $message = strip_tags($_POST['message'] ?? '');
 
         if (empty($name) || empty($email) || empty($message) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            echo json_encode(['success' => false, 'message' => 'Veuillez remplir tous les champs correctement.']);
+            echo json_encode(['success' => false, 'message' => 'Merci de remplir tous les champs correctement.']);
             exit;
         }
 
@@ -69,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $name = strip_tags($_POST['name']);
 
         if (in_array($name, $data[$time] ?? [])) {
-            echo json_encode(['success' => false, 'message' => 'Vous êtes déjà inscrit·e à ce créneau']);
+            echo json_encode(['success' => false, 'message' => 'Tu es déjà inscrit·e à ce créneau']);
             exit;
         }
 
@@ -823,7 +822,7 @@ for ($i = 0; $i < 24; $i++) {
                 <div class="card feature-card">
                     <div class="icon-wrapper">👥</div>
                     <h3 class="feature-title">Solidarité</h3>
-                    <p class="feature-desc">Rejoignez le défi sur n'importe quel créneau</p>
+                    <p class="feature-desc">Rejoins le défi sur n'importe quel créneau</p>
                 </div>
             </div>
 
@@ -836,12 +835,12 @@ for ($i = 0; $i < 24; $i++) {
                             qui rassemble une communauté autour de valeurs fortes.
                         </p>
                         <p style="margin-bottom: 1.5rem;">
-                            🎉 Rejoignez cette aventure en réservant un créneau pour courir et
+                            🎉 Rejoins cette aventure en réservant un créneau pour courir et
                             célébrer ensemble la solidarité et l'endurance humaine !
                         </p>
                         <p style="margin-bottom: 1.5rem;">
-                            🤝 Il est possible — et même conseillé — d'accompagner les participant·e·s en vous inscrivant sur un créneau, que ce soit pour un ou plusieurs tours.
-                            Venez partager l'expérience, soutenir les participant·es et vivre ce moment ensemble !
+                            🤝 Il est possible, et même conseillé, d'accompagner les participant·e·s en t'inscrivant sur un créneau, que ce soit pour un ou plusieurs tours.
+                            Viens partager l'expérience, soutenir les participant·es et vivre ce moment ensemble !
                         </p>
                         <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border);">
                             <h4 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1.5rem; color: var(--primary);">Modalités de participation</h4>
@@ -936,8 +935,8 @@ for ($i = 0; $i < 24; $i++) {
         <div class="container" style="max-width: 1200px;">
             <h2 class="section-title gradient-primary">Inscriptions</h2>
             <p class="section-subtitle">
-                Choisissez votre créneau et rejoignez l'aventure !
-                Vous pouvez courir un ou plusieurs tours.
+                Choisis ton créneau et rejoins l'aventure !
+                Tu peux courir un ou plusieurs tours.
             </p>
 
             <div class="grid grid-3">
@@ -972,7 +971,7 @@ for ($i = 0; $i < 24; $i++) {
                         </div>
 
                         <form class="registration-form" data-time="<?= $timeString ?>" data-slot-id="<?= $slot['id'] ?>">
-                            <input type="text" class="input" name="name" placeholder="Votre prénom" required>
+                            <input type="text" class="input" name="name" placeholder="Ton prénom" required>
                             <button type="submit" class="btn btn-register">S'inscrire</button>
                         </form>
                     </div>
@@ -1001,9 +1000,9 @@ for ($i = 0; $i < 24; $i++) {
                     <h4>Contact</h4>
                     <p style="color: var(--muted-foreground); margin-bottom: 1rem;">
                         Pour toute question ou information supplémentaire,
-                        venez nous voir sur place ou rejoignez-nous directement !
+                        viens nous voir sur place ou envoie-moi un message !
                     </p>
-                    <a href="#" id="contactLink" style="color: var(--primary); text-decoration: underline; cursor: pointer;">Nous contacter</a>
+                    <a href="#" id="contactLink" style="color: var(--primary); text-decoration: underline; cursor: pointer;">Me contacter</a>
                 </div>
             </div>
             <div class="footer-bottom">
@@ -1015,11 +1014,11 @@ for ($i = 0; $i < 24; $i++) {
     <div class="popup-overlay" id="contactPopup">
         <div class="popup-content">
             <button class="popup-close" id="closePopup">&times;</button>
-            <h2 class="popup-title">Nous contacter</h2>
+            <h2 class="popup-title">Me contacter</h2>
             <form class="contact-form" id="contactForm">
-                <input type="text" class="input" name="name" placeholder="Votre nom" required>
-                <input type="email" class="input" name="email" placeholder="Votre email" required>
-                <textarea name="message" placeholder="Votre message" required></textarea>
+                <input type="text" class="input" name="name" placeholder="Ton nom" required>
+                <input type="email" class="input" name="email" placeholder="Ton email" required>
+                <textarea name="message" placeholder="Ton message" required></textarea>
                 <button type="submit" class="btn btn-submit">Envoyer</button>
             </form>
         </div>
@@ -1107,7 +1106,7 @@ for ($i = 0; $i < 24; $i++) {
                         showToast(data.message, 'error');
                     }
                 } catch (error) {
-                    showToast('Erreur lors de l\'inscription. Veuillez réessayer.', 'error');
+                    showToast('Erreur lors de l\'inscription. Réessaie.', 'error');
                 } finally {
                     button.disabled = false;
                     button.textContent = originalButtonText;
@@ -1180,7 +1179,7 @@ for ($i = 0; $i < 24; $i++) {
                     showToast(data.message, 'error');
                 }
             } catch (error) {
-                showToast('Erreur lors de l\'envoi du message. Veuillez réessayer.', 'error');
+                showToast('Erreur lors de l\'envoi du message. Réessaie.', 'error');
             } finally {
                 button.disabled = false;
                 button.textContent = originalButtonText;
