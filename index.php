@@ -798,7 +798,7 @@ for ($i = 0; $i < 24; $i++) {
 
     <section id="concept" class="section">
         <div class="container">
-            <h2 class="section-title gradient-accent">Le Concept</h2>
+            <h2 class="section-title gradient-accent">Le concept</h2>
             <p class="section-subtitle">
                 Un événement sportif et festif unique qui célèbre l'endurance,
                 la solidarité et l'esprit humain au cœur de Bordeaux.
@@ -829,7 +829,7 @@ for ($i = 0; $i < 24; $i++) {
 
             <div style="max-width: 56rem; margin: 0 auto;">
                 <div class="card gradient-bg-card">
-                    <h3 style="font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; color: var(--primary);">L'Objectif & Les Règles</h3>
+                    <h3 style="font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; color: var(--primary);">L'objectif & les règles</h3>
                     <div style="font-size: 1.125rem; line-height: 1.8;">
                         <p style="margin-bottom: 1.5rem;">
                             🌟 Ce défi n'est pas qu'une performance personnelle, c'est un événement
@@ -844,7 +844,7 @@ for ($i = 0; $i < 24; $i++) {
                             Venez partager l'expérience, soutenir les participant·es et vivre ce moment ensemble !
                         </p>
                         <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border);">
-                            <h4 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1.5rem; color: var(--primary);">Modalités de Participation</h4>
+                            <h4 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1.5rem; color: var(--primary);">Modalités de participation</h4>
                             <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem;">
                                 <span style="font-size: 1.5rem;">🕐</span>
                                 <div>
@@ -889,7 +889,7 @@ for ($i = 0; $i < 24; $i++) {
 
     <section id="parcours" class="section" style="background: var(--background);">
         <div class="container">
-            <h2 class="section-title gradient-secondary">Le Parcours</h2>
+            <h2 class="section-title gradient-secondary">Le parcours</h2>
             <p class="section-subtitle">
                 Une boucle magique au cœur de Bordeaux
             </p>
@@ -908,18 +908,18 @@ for ($i = 0; $i < 24; $i++) {
                 <div class="card" style="text-align: center;">
                     <div class="icon-wrapper">📍</div>
                     <h3 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">Les Quais</h3>
-                    <p style="color: var(--muted-foreground);">Bordeaux Rive Droite</p>
+                    <p style="color: var(--muted-foreground);">Bordeaux rive droite</p>
                 </div>
             </div>
 
             <div style="max-width: 56rem; margin: 0 auto;">
                 <div class="card gradient-bg-card">
-                    <h3 style="font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; color: var(--primary);">Point de Départ & Arrivée</h3>
+                    <h3 style="font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; color: var(--primary);">Point de départ & arrivée</h3>
                     <div style="font-size: 1.125rem; line-height: 2;">
                         <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem;">
                             <span style="font-size: 1.5rem;">📍</span>
                             <div>
-                                <p style="font-weight: 600;">Quai des Queyries, Rive Droite</p>
+                                <p style="font-weight: 600;">Quai des Queyries, rive droite</p>
                                 <p style="color: var(--muted-foreground);">Devant le parking de la Belle Saison (van Volkswagen blanc)</p>
                             </div>
                         </div>
