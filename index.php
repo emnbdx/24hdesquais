@@ -795,6 +795,26 @@ for ($i = 0; $i < 24; $i++) {
         </div>
     </section>
 
+      <section id="disclaimer" class="section">
+          <div class="container" style="max-width: 900px;">
+              <h2 class="section-title gradient-secondary">Avertissement</h2>
+              <p class="section-subtitle">
+                  Participation libre, sans cadre associatif ou commercial, chacun vient à ses propres risques.
+              </p>
+              <div class="card" style="font-size: 1.125rem; line-height: 1.8; background: linear-gradient(145deg, rgba(20, 30, 45, 0.9), rgba(15, 20, 30, 0.95)); border: 1px solid rgba(255, 255, 255, 0.08);">
+                  <p style="margin-bottom: 1rem;">
+                      Cette course n'est pas déclarée officiellement et ne relève d'aucune structure organisatrice. Il n'y a ni inscription administrative, ni assurance collective, ni dispositif de sécurité mis en place par un tiers.
+                  </p>
+                  <p style="margin-bottom: 1rem;">
+                      Chaque participant·e demeure intégralement responsable de son état de santé, de son équipement, de son alimentation, de sa sécurité, ainsi que du respect des règles de circulation en vigueur sur l'espace public.
+                  </p>
+                  <p>
+                      En rejoignant un créneau, tu reconnais participer volontairement, en pleine autonomie, et accepter qu'aucune responsabilité ne puisse être engagée à l'encontre de l'initiateur ou des autres coureurs.
+                  </p>
+              </div>
+          </div>
+      </section>
+
     <section id="concept" class="section">
         <div class="container">
             <h2 class="section-title gradient-accent">Le concept</h2>
