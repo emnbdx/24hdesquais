@@ -778,7 +778,7 @@ for ($i = 0; $i < 24; $i++) {
             <h1 class="hero-title">24h</h1>
             <div class="hero-subtitle">= 24 TOURS</div>
             <p class="hero-description">des quais de bordeaux</p>
-            <p class="hero-text">🏃‍♂️ Un défi sportif extrême inspiré des <strong style="color: var(--primary);">Backyard Ultra</strong></p>
+            <p class="hero-text">🏃‍♂️ Un défi sportif extrême inspiré des <strong style="color: var(--primary);"><a href="https://fr.wikipedia.org/wiki/Backyard_ultra" target="_blank">Backyard Ultra</a></strong> et de <a href="https://www.instagram.com/thespeedproject/" target="_blank">TSP</a></p>
 
             <div class="hero-actions">
                 <a href="#inscriptions" class="btn btn-hero" style="animation: pulse-glow 2s ease-in-out infinite;">S'inscrire maintenant</a>
@@ -844,6 +844,13 @@ for ($i = 0; $i < 24; $i++) {
                         </p>
                         <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border);">
                             <h4 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1.5rem; color: var(--primary);">Modalités de participation</h4>
+                            <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem;">
+                                <span style="font-size: 1.5rem;">📋</span>
+                                <div>
+                                    <p style="font-weight: 600;">Briefing : 1 mai 2026 à 17h30</p>
+                                    <p style="color: var(--muted-foreground);">Rendez-vous avant le départ pour les dernières consignes</p>
+                                </div>
+                            </div>
                             <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem;">
                                 <span style="font-size: 1.5rem;">🕐</span>
                                 <div>
