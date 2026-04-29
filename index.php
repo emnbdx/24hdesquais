@@ -941,7 +941,7 @@ for ($i = 0; $i < 24; $i++) {
                 </div>
                 <div class="card feature-card">
                     <div class="icon-wrapper">📍</div>
-                    <h3 class="feature-title">6,8 km</h3>
+                    <h3 class="feature-title">6,9 km</h3>
                     <p class="feature-desc">Une boucle complète des quais de Bordeaux à chaque tour</p>
                 </div>
                 <div class="card feature-card">
@@ -1033,7 +1033,7 @@ for ($i = 0; $i < 24; $i++) {
             <div class="grid grid-3" style="margin-bottom: 3rem;">
                 <div class="card" style="text-align: center;">
                     <div class="icon-wrapper">🛤️</div>
-                    <h3 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">6,8 km</h3>
+                    <h3 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">6,9 km</h3>
                     <p style="color: var(--muted-foreground);">Distance par tour</p>
                 </div>
                 <div class="card" style="text-align: center;">
@@ -1149,7 +1149,7 @@ for ($i = 0; $i < 24; $i++) {
                     <ul>
                         <li>📅 1-2 Mai 2026</li>
                         <li>📍 Quai des Queyries</li>
-                        <li>🏃‍♂️ 6,8 km par tour</li>
+                        <li>🏃‍♂️ 6,9 km par tour</li>
                         <li>⏰ 24 heures non-stop</li>
                     </ul>
                 </div>
