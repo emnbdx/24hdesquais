@@ -1039,7 +1039,7 @@ for ($i = 0; $i < 24; $i++) {
                 <div class="card" style="text-align: center;">
                     <div class="icon-wrapper">🧭</div>
                     <h3 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">24 Tours</h3>
-                    <p style="color: var(--muted-foreground);">163,2 km au total</p>
+                    <p style="color: var(--muted-foreground);">165,6 km au total</p>
                 </div>
                 <div class="card" style="text-align: center;">
                     <div class="icon-wrapper">📍</div>
