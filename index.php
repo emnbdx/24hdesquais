@@ -10,6 +10,23 @@ $dotenv->load();
 $file = 'data.json';
 $data = json_decode(file_get_contents($file), true) ?: [];
 
+$now = new DateTime();
+$raceStart = new DateTime('2026-05-01 18:00:00');
+$raceEnd = new DateTime('2026-05-02 18:00:00');
+$resultsAvailableFrom = (clone $raceEnd)->modify('+24 hours');
+
+try {
+    $registrationEnd = new DateTime($_ENV['REGISTRATION_END_DATE'] ?? '2026-04-30 23:59:59');
+} catch (Exception $e) {
+    $registrationEnd = new DateTime('2026-04-30 23:59:59');
+}
+
+$registrationsOpen = $now < $registrationEnd;
+$showResults = !$registrationsOpen && $now >= $resultsAvailableFrom;
+$showLive = !$registrationsOpen && !$showResults;
+$showLiveLink = $showLive || $showResults;
+$liveTrackingUrl = 'https://livechrono.run/';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
 
@@ -64,6 +81,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 
     if (isset($_POST['time']) && !empty($_POST['name'])) {
+        if (!$registrationsOpen) {
+            echo json_encode(['success' => false, 'message' => 'Les inscriptions sont fermées.']);
+            exit;
+        }
+
         $time = $_POST['time'];
         $name = strip_tags($_POST['name']);
 
@@ -661,6 +683,58 @@ for ($i = 0; $i < 24; $i++) {
             cursor: not-allowed;
         }
 
+        .live-banner {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, hsla(185, 85%, 55%, 0.15), hsla(25, 95%, 60%, 0.15));
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        @media (min-width: 768px) {
+            .live-banner {
+                flex-direction: row;
+                justify-content: space-between;
+                text-align: left;
+            }
+        }
+
+        .live-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .live-banner-icon {
+            font-size: 2.5rem;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .live-banner-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+            color: var(--foreground);
+        }
+
+        .live-banner-text {
+            color: var(--muted-foreground);
+            font-size: 1rem;
+        }
+
+        .live-banner-btn {
+            flex-shrink: 0;
+            white-space: nowrap;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
         .popup-overlay {
             position: fixed;
             inset: 0;
@@ -911,7 +985,15 @@ for ($i = 0; $i < 24; $i++) {
             <p class="hero-text">🏃‍♂️ Un défi sportif extrême inspiré des <strong style="color: var(--primary);"><a href="https://fr.wikipedia.org/wiki/Backyard_ultra" target="_blank">Backyard Ultra</a></strong> et de <a href="https://www.instagram.com/thespeedproject/" target="_blank">TSP</a></p>
 
             <div class="hero-actions">
-                <a href="#inscriptions" class="btn btn-hero" style="animation: pulse-glow 2s ease-in-out infinite;">S'inscrire maintenant</a>
+                <?php if ($registrationsOpen): ?>
+                    <a href="#inscriptions" class="btn btn-hero" style="animation: pulse-glow 2s ease-in-out infinite;">S'inscrire maintenant</a>
+                <?php elseif ($showLive): ?>
+                    <a href="<?= htmlspecialchars($liveTrackingUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-hero" style="animation: pulse-glow 2s ease-in-out infinite;">🔴 Suivi live</a>
+                <?php elseif ($showResults): ?>
+                    <a href="<?= htmlspecialchars($liveTrackingUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-hero" style="animation: pulse-glow 2s ease-in-out infinite;">🏆 Voir les résultats</a>
+                <?php else: ?>
+                    <a href="#inscriptions" class="btn btn-hero">Voir les créneaux</a>
+                <?php endif; ?>
                 <a href="#concept" class="btn btn-outline">En savoir plus</a>
             </div>
 
@@ -1090,11 +1172,48 @@ for ($i = 0; $i < 24; $i++) {
 
     <section id="inscriptions" class="section gradient-bg-card">
         <div class="container" style="max-width: 1200px;">
-            <h2 class="section-title gradient-primary">Inscriptions</h2>
+            <h2 class="section-title gradient-primary">
+                <?php if ($registrationsOpen): ?>
+                    Inscriptions
+                <?php elseif ($showLive): ?>
+                    Suivi live
+                <?php elseif ($showResults): ?>
+                    Résultats
+                <?php else: ?>
+                    Participant·e·s
+                <?php endif; ?>
+            </h2>
             <p class="section-subtitle">
-                Choisis ton créneau et rejoins l'aventure !
-                Tu peux courir un ou plusieurs tours.
+                <?php if ($registrationsOpen): ?>
+                    Choisis ton créneau et rejoins l'aventure !
+                    Tu peux courir un ou plusieurs tours.
+                <?php elseif ($showLive): ?>
+                    Les inscriptions sont fermées. Suis la course en direct&nbsp;!
+                <?php elseif ($showResults): ?>
+                    La course est terminée. Découvre le classement&nbsp;!
+                <?php else: ?>
+                    Les inscriptions sont fermées. Voici les participant·e·s.
+                <?php endif; ?>
             </p>
+
+            <?php if ($showLiveLink): ?>
+                <div class="live-banner">
+                    <div class="live-banner-content">
+                        <span class="live-banner-icon"><?= $showLive ? '🔴' : '🏆' ?></span>
+                        <div>
+                            <h3 class="live-banner-title"><?= $showLive ? 'La course est lancée&nbsp;!' : 'Course terminée' ?></h3>
+                            <p class="live-banner-text">
+                                <?= $showLive
+                                    ? 'Suis les coureur·euse·s en temps réel sur notre plateforme de suivi.'
+                                    : 'Consulte le classement final et les performances de chacun·e.' ?>
+                            </p>
+                        </div>
+                    </div>
+                    <a href="<?= htmlspecialchars($liveTrackingUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-hero live-banner-btn">
+                        <?= $showLive ? '🔴 Suivi live' : '🏆 Voir les résultats' ?>
+                    </a>
+                </div>
+            <?php endif; ?>
 
             <div class="grid grid-3">
                 <?php foreach ($timeSlots as $index => $slot): ?>
@@ -1127,10 +1246,12 @@ for ($i = 0; $i < 24; $i++) {
                             <?php endif; ?>
                         </div>
 
-                        <form class="registration-form" data-time="<?= $timeString ?>" data-slot-id="<?= $slot['id'] ?>">
-                            <input type="text" class="input" name="name" placeholder="Ton prénom" required>
-                            <button type="submit" class="btn btn-register">S'inscrire</button>
-                        </form>
+                        <?php if ($registrationsOpen): ?>
+                            <form class="registration-form" data-time="<?= $timeString ?>" data-slot-id="<?= $slot['id'] ?>">
+                                <input type="text" class="input" name="name" placeholder="Ton prénom" required>
+                                <button type="submit" class="btn btn-register">S'inscrire</button>
+                            </form>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             </div>
