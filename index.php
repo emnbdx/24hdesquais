@@ -1,9 +1,6 @@
 <?php
 require_once __DIR__ . '/vendor/autoload.php';
 
-use Brevo\Client\Configuration;
-use Brevo\Client\Api\TransactionalEmailsApi;
-
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
@@ -40,41 +37,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit;
         }
 
-        $brevoApiKey = $_ENV['BREVO_API_KEY'];
+        $postalApiUrl = rtrim($_ENV['POSTAL_API_URL'] ?? '', '/');
+        $postalApiKey = $_ENV['POSTAL_API_KEY'] ?? '';
 
-        if (empty($brevoApiKey)) {
+        if ($postalApiUrl === '' || $postalApiKey === '') {
             echo json_encode(['success' => false, 'message' => 'Configuration email non disponible.']);
             exit;
         }
 
-        try {
-            $config = Configuration::getDefaultConfiguration()->setApiKey('api-key', $brevoApiKey);
-            $apiInstance = new TransactionalEmailsApi(new \GuzzleHttp\Client(), $config);
+        $html = '<p><strong>Nom:</strong> ' . htmlspecialchars($name) . '</p>' .
+            '<p><strong>Email:</strong> ' . htmlspecialchars($email) . '</p>' .
+            '<p><strong>Message:</strong></p>' .
+            '<p>' . nl2br(htmlspecialchars($message)) . '</p>';
+        $plain = "Nom: {$name}\nEmail: {$email}\n\n{$message}";
+        $fromName = addcslashes('24h des Quais de Bordeaux', '"\\');
+        $replyName = addcslashes($name, '"\\');
 
-            $data = [
-                'subject' => 'Contact - 24h des Quais de Bordeaux',
-                'sender' => [
-                    'name' => '24h des Quais de Bordeaux',
-                    'email' => 'contact@24hdesquais.fr'
-                ],
-                'to' => [
-                    [
-                        'email' => 'eddy.montus@gmail.com'
-                    ]
-                ],
-                'htmlContent' => '<p><strong>Nom:</strong> ' . htmlspecialchars($name) . '</p>' .
-                    '<p><strong>Email:</strong> ' . htmlspecialchars($email) . '</p>' .
-                    '<p><strong>Message:</strong></p>' .
-                    '<p>' . nl2br(htmlspecialchars($message)) . '</p>',
-                'replyTo' => [
-                    'email' => $email,
-                    'name' => $name
-                ]
-            ];
+        $payload = json_encode([
+            'to' => ['eddy.montus@gmail.com'],
+            'from' => "\"{$fromName}\" <contact@24hdesquais.fr>",
+            'reply_to' => "\"{$replyName}\" <{$email}>",
+            'subject' => 'Contact - 24h des Quais de Bordeaux',
+            'html_body' => $html,
+            'plain_body' => $plain,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-            $result = $apiInstance->sendTransacEmail($data);
+        $ch = curl_init($postalApiUrl . '/api/v1/send/message');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'X-Server-API-Key: ' . $postalApiKey,
+            ],
+            CURLOPT_POSTFIELDS => $payload,
+        ]);
+
+        $response = curl_exec($ch);
+        $errno = curl_errno($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $decoded = json_decode((string) $response, true);
+        if ($errno === 0 && $status >= 200 && $status < 300 && ($decoded['status'] ?? '') === 'success') {
             echo json_encode(['success' => true, 'message' => 'Message envoyé avec succès !']);
-        } catch (Exception $e) {
+        } else {
+            error_log('Erreur envoi email Postal: HTTP ' . $status . ' ' . ($response ?: 'curl ' . $errno));
             echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'envoi du message.']);
         }
         exit;
