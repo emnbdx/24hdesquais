@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/vendor/autoload.php';
 
+use Postal\Client;
+use Postal\Send\Message;
+
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
@@ -49,41 +52,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             '<p><strong>Email:</strong> ' . htmlspecialchars($email) . '</p>' .
             '<p><strong>Message:</strong></p>' .
             '<p>' . nl2br(htmlspecialchars($message)) . '</p>';
-        $plain = "Nom: {$name}\nEmail: {$email}\n\n{$message}";
-        $fromName = addcslashes('24h des Quais de Bordeaux', '"\\');
         $replyName = addcslashes($name, '"\\');
 
-        $payload = json_encode([
-            'to' => ['eddy.montus@gmail.com'],
-            'from' => "\"{$fromName}\" <contact@24hdesquais.fr>",
-            'reply_to' => "\"{$replyName}\" <{$email}>",
-            'subject' => 'Contact - 24h des Quais de Bordeaux',
-            'html_body' => $html,
-            'plain_body' => $plain,
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-        $ch = curl_init($postalApiUrl . '/api/v1/send/message');
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 20,
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'X-Server-API-Key: ' . $postalApiKey,
-            ],
-            CURLOPT_POSTFIELDS => $payload,
-        ]);
-
-        $response = curl_exec($ch);
-        $errno = curl_errno($ch);
-        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        $decoded = json_decode((string) $response, true);
-        if ($errno === 0 && $status >= 200 && $status < 300 && ($decoded['status'] ?? '') === 'success') {
+        try {
+            $client = new Client($postalApiUrl, $postalApiKey);
+            $mail = new Message();
+            $mail->to('eddy.montus@gmail.com');
+            $mail->from('24h des Quais de Bordeaux <contact@24hdesquais.fr>');
+            $mail->replyTo("\"{$replyName}\" <{$email}>");
+            $mail->subject('Contact - 24h des Quais de Bordeaux');
+            $mail->htmlBody($html);
+            $mail->plainBody("Nom: {$name}\nEmail: {$email}\n\n{$message}");
+            $client->send->message($mail);
             echo json_encode(['success' => true, 'message' => 'Message envoyé avec succès !']);
-        } else {
-            error_log('Erreur envoi email Postal: HTTP ' . $status . ' ' . ($response ?: 'curl ' . $errno));
+        } catch (Throwable $e) {
+            error_log('Erreur envoi email Postal: ' . $e->getMessage());
             echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'envoi du message.']);
         }
         exit;
