@@ -1,130 +1,15 @@
 <?php
-require_once __DIR__ . '/vendor/autoload.php';
 
-use Postal\Client;
-use Postal\Send\Message;
+$page = $page ?? 'home';
 
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-$dotenv->load();
+require_once __DIR__ . '/src/page.php';
 
-$file = 'data.json';
-$data = json_decode(file_get_contents($file), true) ?: [];
+$pageTitle = match ($page) {
+    'editions' => 'Résultats — 24h des Quais de Bordeaux',
+    'inscriptions' => 'Inscription — 24h des Quais de Bordeaux',
+    default => '24h des Quais de Bordeaux',
+};
 
-$now = new DateTime();
-$raceStart = new DateTime('2026-05-01 18:00:00');
-$raceEnd = new DateTime('2026-05-02 18:00:00');
-$resultsAvailableFrom = (clone $raceEnd)->modify('+24 hours');
-
-try {
-    $registrationEnd = new DateTime($_ENV['REGISTRATION_END_DATE'] ?? '2026-04-30 23:59:59');
-} catch (Exception $e) {
-    $registrationEnd = new DateTime('2026-04-30 23:59:59');
-}
-
-$registrationsOpen = $now < $registrationEnd;
-$showResults = !$registrationsOpen && $now >= $resultsAvailableFrom;
-$showLive = !$registrationsOpen && !$showResults;
-$showLiveLink = $showLive || $showResults;
-$liveTrackingUrl = 'https://livechrono.run/';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    header('Content-Type: application/json');
-
-    if ($_POST['action'] === 'contact') {
-        $name = strip_tags($_POST['name'] ?? '');
-        $email = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
-        $message = strip_tags($_POST['message'] ?? '');
-
-        if (empty($name) || empty($email) || empty($message) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            echo json_encode(['success' => false, 'message' => 'Merci de remplir tous les champs correctement.']);
-            exit;
-        }
-
-        $postalApiUrl = rtrim($_ENV['POSTAL_API_URL'] ?? '', '/');
-        $postalApiKey = $_ENV['POSTAL_API_KEY'] ?? '';
-
-        if ($postalApiUrl === '' || $postalApiKey === '') {
-            echo json_encode(['success' => false, 'message' => 'Configuration email non disponible.']);
-            exit;
-        }
-
-        $html = '<p><strong>Nom:</strong> ' . htmlspecialchars($name) . '</p>' .
-            '<p><strong>Email:</strong> ' . htmlspecialchars($email) . '</p>' .
-            '<p><strong>Message:</strong></p>' .
-            '<p>' . nl2br(htmlspecialchars($message)) . '</p>';
-        $replyName = addcslashes($name, '"\\');
-
-        try {
-            $client = new Client($postalApiUrl, $postalApiKey);
-            $mail = new Message();
-            $mail->to('eddy.montus@gmail.com');
-            $mail->from('24h des Quais de Bordeaux <contact@24hdesquais.fr>');
-            $mail->replyTo("\"{$replyName}\" <{$email}>");
-            $mail->subject('Contact - 24h des Quais de Bordeaux');
-            $mail->htmlBody($html);
-            $mail->plainBody("Nom: {$name}\nEmail: {$email}\n\n{$message}");
-            $client->send->message($mail);
-            echo json_encode(['success' => true, 'message' => 'Message envoyé avec succès !']);
-        } catch (Throwable $e) {
-            error_log('Erreur envoi email Postal: ' . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'envoi du message.']);
-        }
-        exit;
-    }
-
-    if (isset($_POST['time']) && !empty($_POST['name'])) {
-        if (!$registrationsOpen) {
-            echo json_encode(['success' => false, 'message' => 'Les inscriptions sont fermées.']);
-            exit;
-        }
-
-        $time = $_POST['time'];
-        $name = strip_tags($_POST['name']);
-
-        if (in_array($name, $data[$time] ?? [])) {
-            echo json_encode(['success' => false, 'message' => 'Tu es déjà inscrit·e à ce créneau']);
-            exit;
-        }
-
-        $data[$time][] = $name;
-        file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
-        echo json_encode(['success' => true, 'message' => "Inscription confirmée ! 🎉", 'participants' => $data[$time]]);
-        exit;
-    }
-}
-
-$fmt = new IntlDateFormatter('fr_FR', IntlDateFormatter::NONE, IntlDateFormatter::NONE);
-$fmt->setPattern('EEEE HH:mm');
-
-function capitalizeFirstLetter($dateStr)
-{
-    return mb_convert_case($dateStr, MB_CASE_TITLE, "UTF-8");
-}
-
-$times = [];
-$start = new DateTime('2026-05-01 18:00:00');
-$end = new DateTime('2026-05-02 17:59:59');
-
-while ($start <= $end) {
-    $timeString = $start->format('Y-m-d H:i:s');
-    $timeRange = capitalizeFirstLetter($fmt->format($start->getTimestamp())) . ' - ' . $start->modify('+1 hour')->format('H:i');
-    $times[$timeString] = $timeRange;
-    $start->modify('-1 hour')->modify('+1 hour');
-}
-
-$startHour = 18;
-$timeSlots = [];
-for ($i = 0; $i < 24; $i++) {
-    $hour = ($startHour + $i) % 24;
-    $day = $i < 6 ? "Vendredi" : "Samedi";
-    $nextHour = ($hour + 1) % 24;
-    $timeSlots[] = [
-        'id' => $i + 1,
-        'day' => $day,
-        'time' => str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00 - ' . str_pad($nextHour, 2, '0', STR_PAD_LEFT) . ':00'
-    ];
-}
 ?>
 
 <!DOCTYPE html>
@@ -133,7 +18,11 @@ for ($i = 0; $i < 24; $i++) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>24h des Quais de Bordeaux</title>
+    <meta name="csrf" content="<?= h((string) ($_SESSION['csrf'] ?? '')) ?>">
+    <title><?= h($pageTitle) ?></title>
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" href="favicon-32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <style>
         :root {
             --background: hsl(220, 30%, 8%);
@@ -276,9 +165,66 @@ for ($i = 0; $i < 24; $i++) {
             transform: translateY(-2px);
         }
 
+        .site-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem 1.5rem;
+            flex-wrap: wrap;
+            padding: 0.85rem 1.5rem;
+            background: hsla(220, 30%, 8%, 0.92);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+        }
+
+        .site-nav-brand {
+            color: var(--foreground);
+            font-weight: 800;
+            text-decoration: none;
+            letter-spacing: 0.02em;
+        }
+
+        .site-nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .site-nav-links a {
+            color: var(--muted-foreground);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.4rem 0.85rem;
+            border-radius: 999px;
+        }
+
+        .site-nav-links a[aria-current="page"] {
+            color: var(--primary-foreground);
+            background: linear-gradient(135deg, var(--primary), hsl(200, 80%, 45%));
+        }
+
+        .card-link {
+            display: block;
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .card-link h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-link p {
+            color: var(--muted-foreground);
+            margin: 0;
+        }
+
         .hero-section {
             position: relative;
-            min-height: 100vh;
+            min-height: calc(100vh - 4.25rem);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -961,12 +907,281 @@ for ($i = 0; $i < 24; $i++) {
                 display: block;
             }
         }
+
+        .editions-page .section-title {
+            font-size: clamp(2.2rem, 4vw, 3.25rem);
+            margin-bottom: 0.75rem;
+        }
+
+        .editions-page .section-subtitle {
+            margin-bottom: 1.75rem;
+        }
+
+        .year-tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 0 auto 1.5rem;
+        }
+
+        .year-tabs button {
+            font: inherit;
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: var(--muted-foreground);
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 0.45rem 1.2rem;
+            cursor: pointer;
+        }
+
+        .year-tabs button[aria-selected="true"] {
+            color: var(--primary-foreground);
+            border-color: transparent;
+            background: linear-gradient(135deg, var(--primary), hsl(200, 80%, 45%));
+        }
+
+        .year-tabs button:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 3px;
+        }
+
+        .edition {
+            max-width: 40rem;
+            margin: 0 auto;
+        }
+
+        .edition-head {
+            text-align: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .edition-head p {
+            color: var(--muted-foreground);
+        }
+
+        .results-list {
+            list-style: none;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .results-list li {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.7rem 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .results-list li:first-child {
+            border-top: 0;
+        }
+
+        .results-list li.is-finisher {
+            background: linear-gradient(90deg, hsla(25, 95%, 60%, 0.18), hsla(185, 85%, 55%, 0.12));
+            font-weight: 700;
+        }
+
+        .results-name {
+            min-width: 0;
+        }
+
+        .results-note {
+            display: block;
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--muted-foreground);
+        }
+
+        .results-laps {
+            flex: none;
+            font-variant-numeric: tabular-nums;
+            color: var(--muted-foreground);
+            white-space: nowrap;
+        }
+
+        .results-list li.is-finisher .results-laps {
+            color: var(--foreground);
+        }
+
+        .signup-cta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem 1rem;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 3rem;
+            text-align: center;
+        }
+
+        .signup-cta p {
+            width: 100%;
+            margin: 0;
+        }
+
+        .slot-card.is-mine {
+            border-color: var(--primary);
+        }
+
+        .participants-list li.is-me {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .popup-wide {
+            max-width: 44rem;
+        }
+
+        .popup-wide .btn-submit {
+            width: 100%;
+        }
+
+        .account-hint {
+            color: var(--muted-foreground);
+            margin: -0.5rem 0 1.25rem;
+        }
+
+        .account-switch {
+            text-align: center;
+            margin: 1rem 0 0;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            margin-bottom: 0.9rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .field .input {
+            font-weight: 400;
+            margin-bottom: 0;
+        }
+
+        .field-help {
+            font-weight: 400;
+            color: var(--muted-foreground);
+            font-size: 0.8rem;
+        }
+
+        .form-row {
+            display: grid;
+            gap: 0.75rem;
+            margin-bottom: 0.9rem;
+        }
+
+        .form-row .field {
+            margin-bottom: 0;
+        }
+
+        @media (min-width: 640px) {
+            .form-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .slot-picker-set {
+            border: 0;
+            margin: 0 0 1rem;
+            padding: 0;
+        }
+
+        .slot-picker-set legend {
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .slot-picker-tools {
+            display: flex;
+            gap: 1rem;
+            margin: 0.35rem 0 0.75rem;
+        }
+
+        .slot-picker-day {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--muted-foreground);
+            margin: 0.35rem 0 0.4rem;
+        }
+
+        .slot-picker {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 0.85rem;
+        }
+
+        .slot-choice {
+            position: relative;
+        }
+
+        .slot-choice input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .slot-choice span {
+            display: block;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.45rem 0.4rem;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .slot-choice:has(input:checked) span {
+            background: linear-gradient(135deg, var(--primary), hsl(200, 80%, 45%));
+            color: var(--primary-foreground);
+            border-color: transparent;
+        }
+
+        .slot-choice input:focus-visible + span {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .linkish {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font: inherit;
+            text-decoration: underline;
+            padding: 0;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
     </style>
 </head>
 
-<body>
+<body data-page="<?= h($page) ?>">
     <div class="toast-container" id="toastContainer"></div>
 
+    <header class="site-nav">
+        <a class="site-nav-brand" href="/">24h des Quais</a>
+        <nav class="site-nav-links" aria-label="Pages">
+            <a href="/"<?= $page === 'home' ? ' aria-current="page"' : '' ?>>Accueil</a>
+            <a href="/resultat"<?= $page === 'editions' ? ' aria-current="page"' : '' ?>>Résultats</a>
+            <a href="/inscription"<?= $page === 'inscriptions' ? ' aria-current="page"' : '' ?>>Inscription</a>
+        </nav>
+    </header>
+
+    <?php if ($page === 'home'): ?>
     <section class="hero-section">
         <div class="hero-bg"></div>
         <div class="hero-overlay"></div>
@@ -977,20 +1192,22 @@ for ($i = 0; $i < 24; $i++) {
             <p class="hero-text">🏃‍♂️ Un défi sportif extrême inspiré des <strong style="color: var(--primary);"><a href="https://fr.wikipedia.org/wiki/Backyard_ultra" target="_blank">Backyard Ultra</a></strong> et de <a href="https://www.instagram.com/thespeedproject/" target="_blank">TSP</a></p>
 
             <div class="hero-actions">
-                <?php if ($registrationsOpen): ?>
-                    <a href="#inscriptions" class="btn btn-hero" style="animation: pulse-glow 2s ease-in-out infinite;">S'inscrire maintenant</a>
+                <?php if ($member && $signupAvailable): ?>
+                    <a href="/inscription" class="btn btn-hero js-open-account" data-account="edit" style="animation: pulse-glow 2s ease-in-out infinite;">Mon espace</a>
+                <?php elseif ($signupAvailable): ?>
+                    <a href="/inscription" class="btn btn-hero" style="animation: pulse-glow 2s ease-in-out infinite;">S'inscrire maintenant</a>
                 <?php elseif ($showLive): ?>
                     <a href="<?= htmlspecialchars($liveTrackingUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-hero" style="animation: pulse-glow 2s ease-in-out infinite;">🔴 Suivi live</a>
                 <?php elseif ($showResults): ?>
-                    <a href="<?= htmlspecialchars($liveTrackingUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-hero" style="animation: pulse-glow 2s ease-in-out infinite;">🏆 Voir les résultats</a>
+                    <a href="/resultat" class="btn btn-hero" style="animation: pulse-glow 2s ease-in-out infinite;">🏆 Voir les résultats</a>
                 <?php else: ?>
-                    <a href="#inscriptions" class="btn btn-hero">Voir les créneaux</a>
+                    <a href="/inscription" class="btn btn-hero">Voir les créneaux</a>
                 <?php endif; ?>
                 <a href="#concept" class="btn btn-outline">En savoir plus</a>
             </div>
 
             <div class="hero-info">
-                <div>▶️ 1 mai 2026 à 18h</div>
+                <div>▶️ <?= h($labelStart) ?></div>
                 <div>📍 Quai des Queyries, Rive Droite</div>
                 <div>⏹️ 24h plus tard !</div>
             </div>
@@ -1015,7 +1232,7 @@ for ($i = 0; $i < 24; $i++) {
                 </div>
                 <div class="card feature-card">
                     <div class="icon-wrapper">📍</div>
-                    <h3 class="feature-title">6,9 km</h3>
+                    <h3 class="feature-title">6,8 km</h3>
                     <p class="feature-desc">Une boucle complète des quais de Bordeaux à chaque tour</p>
                 </div>
                 <div class="card feature-card">
@@ -1051,21 +1268,21 @@ for ($i = 0; $i < 24; $i++) {
                             <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem;">
                                 <span style="font-size: 1.5rem;">📋</span>
                                 <div>
-                                    <p style="font-weight: 600;">Briefing : 1 mai 2026 à 17h30</p>
+                                    <p style="font-weight: 600;">Briefing : <?= h($labelBriefing) ?></p>
                                     <p style="color: var(--muted-foreground);">Rendez-vous avant le départ pour les dernières consignes</p>
                                 </div>
                             </div>
                             <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem;">
                                 <span style="font-size: 1.5rem;">🕐</span>
                                 <div>
-                                    <p style="font-weight: 600;">Départ : 1 mai 2026 à 18h</p>
+                                    <p style="font-weight: 600;">Départ : <?= h($labelStart) ?></p>
                                     <p style="color: var(--muted-foreground);">Un nouveau tour démarre chaque heure pile</p>
                                 </div>
                             </div>
                             <div style="display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem;">
                                 <span style="font-size: 1.5rem;">🎯</span>
                                 <div>
-                                    <p style="font-weight: 600;">Arrivée : 2 mai 2026 à 18h</p>
+                                    <p style="font-weight: 600;">Arrivée : <?= h($labelEnd) ?></p>
                                     <p style="color: var(--muted-foreground);">Le·la gagnant·e sera le premier à arriver</p>
                                 </div>
                             </div>
@@ -1107,13 +1324,13 @@ for ($i = 0; $i < 24; $i++) {
             <div class="grid grid-3" style="margin-bottom: 3rem;">
                 <div class="card" style="text-align: center;">
                     <div class="icon-wrapper">🛤️</div>
-                    <h3 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">6,9 km</h3>
+                    <h3 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">6,8 km</h3>
                     <p style="color: var(--muted-foreground);">Distance par tour</p>
                 </div>
                 <div class="card" style="text-align: center;">
                     <div class="icon-wrapper">🧭</div>
                     <h3 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem;">24 Tours</h3>
-                    <p style="color: var(--muted-foreground);">165,6 km au total</p>
+                    <p style="color: var(--muted-foreground);">163,2 km au total</p>
                 </div>
                 <div class="card" style="text-align: center;">
                     <div class="icon-wrapper">📍</div>
@@ -1130,7 +1347,8 @@ for ($i = 0; $i < 24; $i++) {
                             <span style="font-size: 1.5rem;">📍</span>
                             <div>
                                 <p style="font-weight: 600;">Quai des Queyries, rive droite</p>
-                                <p style="color: var(--muted-foreground);">Devant le parking de la Belle Saison (van Volkswagen blanc)</p>
+                                <p style="color: var(--muted-foreground);">Devant le parking de la Belle Saison</p>
+                                <p style="color: var(--muted-foreground);">Pense à arriver tôt, les places ne sont pas simples à trouver.</p>
                             </div>
                         </div>
                         <div style="margin-bottom: 1.5rem; text-align: center;">
@@ -1162,6 +1380,78 @@ for ($i = 0; $i < 24; $i++) {
         </div>
     </section>
 
+    <section class="section" style="background: var(--background);">
+        <div class="container">
+            <h2 class="section-title gradient-accent">La suite</h2>
+            <div class="grid grid-2" style="max-width: 56rem; margin: 0 auto;">
+                <a class="card card-link" href="/resultat">
+                    <h3>Éditions précédentes</h3>
+                    <p>Les résultats des courses déjà courues, à commencer par 2026.</p>
+                </a>
+                <a class="card card-link" href="/inscription">
+                    <h3>Inscription</h3>
+                    <p>Choisis tes créneaux pour le <?= h($labelFooter) ?>.</p>
+                </a>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
+
+    <?php if ($page === 'editions'): ?>
+    <section id="editions" class="section editions-page" style="background: var(--background);">
+        <div class="container">
+            <h2 class="section-title gradient-accent">Résultats</h2>
+            <div class="year-tabs" role="tablist" aria-label="Années">
+                <?php foreach ($pastEditions as $index => $edition): ?>
+                    <button
+                        type="button"
+                        role="tab"
+                        id="year-tab-<?= h($edition['year']) ?>"
+                        aria-controls="year-panel-<?= h($edition['year']) ?>"
+                        aria-selected="<?= $index === 0 ? 'true' : 'false' ?>"
+                        tabindex="<?= $index === 0 ? '0' : '-1' ?>"
+                        data-year="<?= h($edition['year']) ?>"
+                    ><?= h($edition['year']) ?></button>
+                <?php endforeach; ?>
+            </div>
+            <?php foreach ($pastEditions as $index => $edition): ?>
+                <?php
+                $finishers = 0;
+                foreach ($edition['results'] as $result) {
+                    if ((int) $result['laps'] >= (int) $edition['laps']) {
+                        $finishers++;
+                    }
+                }
+                $runners = count($edition['results']);
+                ?>
+                <article class="edition" role="tabpanel" id="year-panel-<?= h($edition['year']) ?>" aria-labelledby="year-tab-<?= h($edition['year']) ?>"<?= $index === 0 ? '' : ' hidden' ?>>
+                    <header class="edition-head">
+                        <?php if (($edition['when'] ?? '') !== ''): ?>
+                            <p><?= h($edition['when']) ?><?php if (($edition['detail'] ?? '') !== ''): ?> · <?= h($edition['detail']) ?><?php endif; ?></p>
+                        <?php endif; ?>
+                        <p><?= $runners ?> participant·e·s · <?= $finishers === 0 ? 'aucune arrivée' : $finishers . ' arrivée' . ($finishers > 1 ? 's' : '') ?></p>
+                    </header>
+                    <ol class="results-list">
+                        <?php foreach ($edition['results'] as $result): ?>
+                            <?php $finished = (int) $result['laps'] >= (int) $edition['laps']; ?>
+                            <li<?= $finished ? ' class="is-finisher"' : '' ?>>
+                                <span class="results-name">
+                                    <?= h($result['name']) ?>
+                                    <?php if (!empty($result['note'])): ?>
+                                        <span class="results-note"><?= h($result['note']) ?></span>
+                                    <?php endif; ?>
+                                </span>
+                                <span class="results-laps"><?= (int) $result['laps'] ?> tour<?= (int) $result['laps'] > 1 ? 's' : '' ?></span>
+                            </li>
+                        <?php endforeach; ?>
+                    </ol>
+                </article>
+            <?php endforeach; ?>
+        </div>
+    </section>
+    <?php endif; ?>
+
+    <?php if ($page === 'inscriptions'): ?>
     <section id="inscriptions" class="section gradient-bg-card">
         <div class="container" style="max-width: 1200px;">
             <h2 class="section-title gradient-primary">
@@ -1175,10 +1465,12 @@ for ($i = 0; $i < 24; $i++) {
                     Participant·e·s
                 <?php endif; ?>
             </h2>
-            <p class="section-subtitle">
-                <?php if ($registrationsOpen): ?>
-                    Choisis ton créneau et rejoins l'aventure !
-                    Tu peux courir un ou plusieurs tours.
+            <p class="section-subtitle" style="margin-bottom: 2rem;">
+                <?php if ($registrationsOpen && !$dbReady): ?>
+                    Les inscriptions sont momentanément indisponibles.
+                <?php elseif ($registrationsOpen): ?>
+                    Inscris-toi une fois et choisis tes créneaux.
+                    Un code t'est envoyé par email, sans mot de passe.
                 <?php elseif ($showLive): ?>
                     Les inscriptions sont fermées. Suis la course en direct&nbsp;!
                 <?php elseif ($showResults): ?>
@@ -1207,48 +1499,56 @@ for ($i = 0; $i < 24; $i++) {
                 </div>
             <?php endif; ?>
 
+            <?php if ($signupAvailable || $member): ?>
+                <div class="signup-cta">
+                    <?php if ($member): ?>
+                        <p>Connecté·e en tant que <strong><?= h($member['pseudo']) ?></strong>.</p>
+                        <?php if ($signupAvailable): ?>
+                            <button type="button" class="btn btn-hero js-open-account" data-account="edit">Modifier mon inscription</button>
+                        <?php endif; ?>
+                        <button type="button" class="btn btn-outline js-logout">Se déconnecter</button>
+                    <?php else: ?>
+                        <button type="button" class="btn btn-hero js-open-account" data-account="signup">S'inscrire</button>
+                        <button type="button" class="btn btn-outline js-open-account" data-account="login">Déjà inscrit·e ?</button>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
             <div class="grid grid-3">
-                <?php foreach ($timeSlots as $index => $slot): ?>
+                <?php foreach ($slots as $slot): ?>
                     <?php
-                    $hour = ($startHour + $index) % 24;
-                    $day = $index < 6 ? '2026-05-01' : '2026-05-02';
-                    $timeString = $day . ' ' . str_pad($hour, 2, '0', STR_PAD_LEFT) . ':00:00';
-                    $participants = $data[$timeString] ?? [];
+                    $names = $participants[$slot['key']] ?? [];
+                    $mine = $member !== null && in_array($slot['key'], $member['slots'], true);
                     ?>
-                    <div class="card slot-card">
+                    <div class="card slot-card<?= $mine ? ' is-mine' : '' ?>">
                         <div class="slot-header">
-                            <div class="slot-number"><?= $slot['id'] ?></div>
+                            <div class="slot-number"><?= (int) $slot['id'] ?></div>
                             <div>
-                                <h3 class="slot-day"><?= $slot['day'] ?></h3>
+                                <h3 class="slot-day"><?= h($slot['day']) ?></h3>
                                 <div class="slot-time">
                                     <span>🕐</span>
-                                    <span><?= $slot['time'] ?></span>
+                                    <span><?= h($slot['time']) ?></span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="participants-list" id="participants-<?= $slot['id'] ?>">
-                            <?php if (!empty($participants)): ?>
+                        <div class="participants-list">
+                            <?php if ($names !== []): ?>
                                 <p class="participants-title">Participant·e·s :</p>
                                 <ul>
-                                    <?php foreach ($participants as $participant): ?>
-                                        <li><?= htmlspecialchars($participant) ?></li>
+                                    <?php foreach ($names as $name): ?>
+                                        <?php $isMe = $member !== null && mb_strtolower($name) === mb_strtolower($member['pseudo']); ?>
+                                        <li<?= $isMe ? ' class="is-me"' : '' ?>><?= h($name) ?></li>
                                     <?php endforeach; ?>
                                 </ul>
                             <?php endif; ?>
                         </div>
-
-                        <?php if ($registrationsOpen): ?>
-                            <form class="registration-form" data-time="<?= $timeString ?>" data-slot-id="<?= $slot['id'] ?>">
-                                <input type="text" class="input" name="name" placeholder="Ton prénom" required>
-                                <button type="submit" class="btn btn-register">S'inscrire</button>
-                            </form>
-                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             </div>
         </div>
     </section>
+    <?php endif; ?>
 
     <footer class="footer">
         <div class="container">
@@ -1260,9 +1560,9 @@ for ($i = 0; $i < 24; $i++) {
                 <div class="footer-section">
                     <h4>Informations Pratiques</h4>
                     <ul>
-                        <li>📅 1-2 Mai 2026</li>
+                        <li>📅 <?= h($labelFooter) ?></li>
                         <li>📍 Quai des Queyries</li>
-                        <li>🏃‍♂️ 6,9 km par tour</li>
+                        <li>🏃‍♂️ 6,8 km par tour</li>
                         <li>⏰ 24 heures non-stop</li>
                     </ul>
                 </div>
@@ -1291,18 +1591,81 @@ for ($i = 0; $i < 24; $i++) {
         </button>
         <div class="wa-float-panel" id="waFloatPanel" role="dialog" aria-labelledby="waFloatTitle">
             <p id="waFloatTitle">Rejoindre le groupe WhatsApp</p>
-            <a class="wa-float-qr-link" href="https://chat.whatsapp.com/CJPOHYNmSSqKMRhLuyMUFS?mode=gi_t" target="_blank" rel="noopener noreferrer" title="Ouvrir le groupe WhatsApp">
-                <img src="qrcode.png" width="240" height="240" alt="QR code — ouvre le groupe WhatsApp au toucher">
+            <a class="wa-float-qr-link" href="https://chat.whatsapp.com/Fj16yo9QAi8FSLueqFRISn?mode=gi_t" target="_blank" rel="noopener noreferrer" title="Ouvrir le groupe WhatsApp">
+                <img src="qrcode.png" width="246" height="246" alt="QR code — ouvre le groupe WhatsApp au toucher">
             </a>
             <p class="wa-float-qr-hint">Appuie sur le code pour ouvrir WhatsApp</p>
         </div>
     </div>
+
+    <?php if ($signupAvailable): ?>
+        <div class="popup-overlay" id="accountPopup">
+            <div class="popup-content popup-wide" role="dialog" aria-modal="true" aria-label="Inscription">
+                <button class="popup-close" type="button" id="closeAccount">&times;</button>
+                <?php if (!$member): ?>
+                    <div data-panel="signup">
+                        <h2 class="popup-title">Inscription</h2>
+                        <p class="account-hint">Pas de mot de passe : un code à 6 chiffres t'est envoyé par email.</p>
+                        <form class="contact-form" id="signupForm">
+                            <?php render_csrf(); ?>
+                            <input type="hidden" name="action" value="signup">
+                            <?php render_profile_fields([]); ?>
+                            <?php render_slot_picker($slotsByDay, []); ?>
+                            <button type="submit" class="btn btn-submit">Recevoir mon code</button>
+                        </form>
+                        <p class="account-switch"><button type="button" class="linkish" data-account-panel="login">Déjà inscrit·e ? Se connecter</button></p>
+                    </div>
+                    <div data-panel="login" hidden>
+                        <h2 class="popup-title">Connexion</h2>
+                        <p class="account-hint">Entre ton email, on t'envoie un code.</p>
+                        <form class="contact-form" id="loginForm">
+                            <?php render_csrf(); ?>
+                            <input type="hidden" name="action" value="login">
+                            <label class="field"><span>Email</span>
+                                <input class="input" type="email" name="email" autocomplete="email" required maxlength="190">
+                            </label>
+                            <button type="submit" class="btn btn-submit">Recevoir mon code</button>
+                        </form>
+                        <p class="account-switch"><button type="button" class="linkish" data-account-panel="signup">Créer un compte</button></p>
+                    </div>
+                <?php else: ?>
+                    <div data-panel="edit">
+                        <h2 class="popup-title">Mon espace</h2>
+                        <p class="account-hint">Tu peux modifier tes infos et tes créneaux.</p>
+                        <form class="contact-form" id="editForm">
+                            <?php render_csrf(); ?>
+                            <input type="hidden" name="action" value="update">
+                            <?php render_profile_fields($member); ?>
+                            <?php render_slot_picker($slotsByDay, $member['slots']); ?>
+                            <button type="submit" class="btn btn-submit">Enregistrer</button>
+                        </form>
+                        <p class="account-switch"><button type="button" class="linkish js-logout">Se déconnecter</button></p>
+                    </div>
+                <?php endif; ?>
+                <div data-panel="code" hidden>
+                    <h2 class="popup-title">Ton code</h2>
+                    <p class="account-hint" id="codeHint"></p>
+                    <form class="contact-form" id="codeForm">
+                        <?php render_csrf(); ?>
+                        <input type="hidden" name="action" value="verify_code">
+                        <input type="hidden" name="email" id="codeEmail">
+                        <label class="field"><span>Code à 6 chiffres</span>
+                            <input class="input" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required>
+                        </label>
+                        <button type="submit" class="btn btn-submit">Valider</button>
+                    </form>
+                    <p class="account-switch"><button type="button" class="linkish" id="codeBack">Retour</button></p>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <div class="popup-overlay" id="contactPopup">
         <div class="popup-content">
             <button class="popup-close" id="closePopup">&times;</button>
             <h2 class="popup-title">Me contacter</h2>
             <form class="contact-form" id="contactForm">
+                <?php render_csrf(); ?>
                 <input type="text" class="input" name="name" placeholder="Ton nom" required>
                 <input type="email" class="input" name="email" placeholder="Ton email" required>
                 <textarea name="message" placeholder="Ton message" required></textarea>
@@ -1312,8 +1675,55 @@ for ($i = 0; $i < 24; $i++) {
     </div>
 
     <script>
+        if (document.body.dataset.page === 'home') {
+            if (location.hash === '#inscriptions') {
+                location.replace('/inscription');
+            } else if (location.hash === '#editions') {
+                location.replace('/resultat');
+            }
+        }
+
+        const yearTabs = document.querySelector('.year-tabs');
+        if (yearTabs) {
+            const yearButtons = [...yearTabs.querySelectorAll('[role="tab"]')];
+            const showYear = (year) => {
+                yearButtons.forEach((button) => {
+                    const selected = button.dataset.year === year;
+                    button.setAttribute('aria-selected', selected ? 'true' : 'false');
+                    button.tabIndex = selected ? 0 : -1;
+                    const panel = document.getElementById(button.getAttribute('aria-controls'));
+                    if (panel) {
+                        panel.hidden = !selected;
+                    }
+                });
+            };
+            const requested = location.hash.replace('#', '');
+            const initial = yearButtons.some((button) => button.dataset.year === requested)
+                ? requested
+                : yearButtons[0].dataset.year;
+            showYear(initial);
+            yearButtons.forEach((button, index) => {
+                button.addEventListener('click', () => {
+                    showYear(button.dataset.year);
+                    history.replaceState(null, '', '#' + button.dataset.year);
+                });
+                button.addEventListener('keydown', (event) => {
+                    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') {
+                        return;
+                    }
+                    event.preventDefault();
+                    const next = yearButtons[(index + (event.key === 'ArrowRight' ? 1 : yearButtons.length - 1)) % yearButtons.length];
+                    next.focus();
+                    next.click();
+                });
+            });
+        }
+
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
+                if (this.classList.contains('js-open-account')) {
+                    return;
+                }
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
@@ -1341,65 +1751,150 @@ for ($i = 0; $i < 24; $i++) {
             }, 3000);
         }
 
-        function updateParticipantsList(slotId, participants) {
-            const container = document.getElementById(`participants-${slotId}`);
+        const accountPopup = document.getElementById('accountPopup');
+        let codeOrigin = 'signup';
 
-            if (participants.length === 0) {
-                container.innerHTML = '';
+        function showAccountPanel(name) {
+            if (!accountPopup) {
+                return;
+            }
+            accountPopup.querySelectorAll('[data-panel]').forEach((panel) => {
+                panel.hidden = panel.dataset.panel !== name;
+            });
+        }
+
+        function openAccount(name) {
+            if (!accountPopup) {
+                return;
+            }
+            showAccountPanel(name);
+            accountPopup.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAccount() {
+            if (!accountPopup) {
+                return;
+            }
+            accountPopup.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        async function submitAccountForm(form) {
+            if ((form.id === 'signupForm' || form.id === 'editForm') && form.querySelectorAll('input[name="slots[]"]:checked').length === 0) {
+                showToast('Choisis au moins un créneau.', 'error');
                 return;
             }
 
-            const ul = document.createElement('ul');
-            participants.forEach(name => {
-                const li = document.createElement('li');
-                li.textContent = name;
-                ul.appendChild(li);
-            });
+            const button = form.querySelector('button[type="submit"]');
+            const original = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Envoi...';
 
-            container.innerHTML = '<p class="participants-title">Participant·e·s :</p>';
-            container.appendChild(ul);
+            try {
+                const response = await fetch('', {
+                    method: 'POST',
+                    body: new FormData(form)
+                });
+                const data = await response.json();
+
+                if (!data.success) {
+                    showToast(data.message || 'Une erreur est survenue.', 'error');
+                    return;
+                }
+
+                if (data.step === 'code') {
+                    codeOrigin = form.id === 'loginForm' ? 'login' : (form.id === 'editForm' ? 'edit' : 'signup');
+                    document.getElementById('codeEmail').value = data.email || '';
+                    document.getElementById('codeHint').textContent = data.message || '';
+                    const codeInput = document.querySelector('#codeForm input[name="code"]');
+                    if (codeInput) {
+                        codeInput.value = '';
+                    }
+                    showAccountPanel('code');
+                    return;
+                }
+
+                if (data.reload) {
+                    location.reload();
+                }
+            } catch (error) {
+                showToast('Une erreur est survenue. Réessaie.', 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = original;
+            }
         }
 
-        document.querySelectorAll('.registration-form').forEach(form => {
-            form.addEventListener('submit', async (e) => {
+        document.querySelectorAll('.js-open-account').forEach((button) => {
+            button.addEventListener('click', (e) => {
                 e.preventDefault();
+                openAccount(button.dataset.account || 'signup');
+            });
+        });
 
-                const formData = new FormData(form);
-                const time = form.dataset.time;
-                const slotId = form.dataset.slotId;
-                const button = form.querySelector('button');
-                const input = form.querySelector('input[name="name"]');
+        document.querySelectorAll('[data-account-panel]').forEach((button) => {
+            button.addEventListener('click', () => showAccountPanel(button.dataset.accountPanel));
+        });
 
-                formData.append('action', 'register');
-                formData.append('time', time);
+        document.querySelectorAll('.js-slots-all, .js-slots-none').forEach((button) => {
+            button.addEventListener('click', () => {
+                const check = button.classList.contains('js-slots-all');
+                button.closest('form').querySelectorAll('input[name="slots[]"]').forEach((input) => {
+                    input.checked = check;
+                });
+            });
+        });
 
-                const originalButtonText = button.textContent;
+        ['signupForm', 'loginForm', 'editForm', 'codeForm'].forEach((id) => {
+            const form = document.getElementById(id);
+            if (!form) {
+                return;
+            }
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                submitAccountForm(form);
+            });
+        });
+
+        document.getElementById('closeAccount')?.addEventListener('click', closeAccount);
+        accountPopup?.addEventListener('click', (e) => {
+            if (e.target === accountPopup) {
+                closeAccount();
+            }
+        });
+        document.getElementById('codeBack')?.addEventListener('click', () => showAccountPanel(codeOrigin));
+
+        document.querySelectorAll('.js-logout').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const body = new FormData();
+                body.append('action', 'logout');
+                body.append('csrf', document.querySelector('meta[name="csrf"]').getAttribute('content'));
                 button.disabled = true;
-                button.textContent = 'Inscription...';
-
                 try {
                     const response = await fetch('', {
                         method: 'POST',
-                        body: formData
+                        body
                     });
-
                     const data = await response.json();
-
                     if (data.success) {
-                        showToast(data.message, 'success');
-                        input.value = '';
-                        updateParticipantsList(slotId, data.participants);
-                    } else {
-                        showToast(data.message, 'error');
+                        location.reload();
+                        return;
                     }
+                    showToast(data.message || 'Une erreur est survenue.', 'error');
                 } catch (error) {
-                    showToast('Erreur lors de l\'inscription. Réessaie.', 'error');
-                } finally {
-                    button.disabled = false;
-                    button.textContent = originalButtonText;
+                    showToast('Une erreur est survenue. Réessaie.', 'error');
                 }
+                button.disabled = false;
             });
         });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && accountPopup && accountPopup.classList.contains('active')) {
+                closeAccount();
+            }
+        });
+
 
         const contactLink = document.getElementById('contactLink');
         const contactPopup = document.getElementById('contactPopup');
@@ -1497,6 +1992,11 @@ for ($i = 0; $i < 24; $i++) {
                 button.textContent = originalButtonText;
             }
         });
+
+        const flash = <?= $flashJson ?>;
+        if (flash && flash.message) {
+            showToast(flash.message, flash.type || 'success');
+        }
     </script>
 </body>
 

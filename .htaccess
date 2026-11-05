@@ -9,4 +9,24 @@
 RewriteEngine On
 RewriteCond %{REQUEST_URI} ^.*/vendor/.*$ [NC]
 RewriteRule ^.*$ - [F,L]
+RewriteRule ^(src|db|bin)(/|$) - [F,L]
+
+RewriteCond %{THE_REQUEST} \s/+index\.php[\s?] [NC]
+RewriteRule ^index\.php$ / [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+editions\.php[\s?] [NC]
+RewriteRule ^editions\.php$ /resultat [R=301,L]
+
+RewriteCond %{THE_REQUEST} \s/+inscriptions\.php[\s?] [NC]
+RewriteRule ^inscriptions\.php$ /inscription [R=301,L]
+
+RewriteRule ^resultat/$ /resultat [R=301,L]
+RewriteRule ^inscription/$ /inscription [R=301,L]
+
+RewriteRule ^resultat$ editions.php [L]
+RewriteRule ^inscription$ inscriptions.php [L]
+
+<Files "data.json">
+    Require all denied
+</Files>
 
