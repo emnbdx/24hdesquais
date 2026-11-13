@@ -460,6 +460,172 @@ $pageTitle = match ($page) {
             color: var(--muted-foreground);
         }
 
+        .slot-count {
+            position: absolute;
+            top: 0.85rem;
+            right: 0.85rem;
+            min-width: 1.75rem;
+            height: 1.75rem;
+            padding: 0 0.45rem;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            background: var(--muted);
+            color: var(--muted-foreground);
+        }
+
+        .slot-count:not(.is-empty) {
+            background: linear-gradient(135deg, var(--primary), hsl(200, 80%, 45%));
+            color: var(--primary-foreground);
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .slot-chart {
+            position: relative;
+            margin: 0 auto 2.5rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem 1rem 0.75rem;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .slot-chart-title {
+            margin: 0 0.5rem 0.75rem;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .slot-chart-scroll {
+            overflow-x: auto;
+        }
+
+        .slot-chart svg {
+            display: block;
+            width: 100%;
+            min-width: 720px;
+            height: auto;
+        }
+
+        .slot-chart text {
+            fill: var(--muted-foreground);
+            font-size: 12px;
+            font-family: inherit;
+        }
+
+        .slot-chart .slot-grid {
+            stroke: var(--border);
+            stroke-width: 1;
+        }
+
+        .slot-chart .slot-area {
+            fill: hsla(185, 85%, 55%, 0.16);
+        }
+
+        .slot-chart .slot-line {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 2.5;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+        }
+
+        .slot-chart .slot-point {
+            fill: var(--background);
+            stroke: var(--primary);
+            stroke-width: 2.5;
+            cursor: pointer;
+        }
+
+        .slot-chart .slot-point.is-empty {
+            stroke: var(--border);
+        }
+
+        .slot-chart .slot-point:hover,
+        .slot-chart .slot-point:focus {
+            fill: var(--primary);
+            outline: none;
+        }
+
+        .slot-chart-count,
+        .slot-chart-tip {
+            position: fixed;
+            z-index: 30;
+            pointer-events: none;
+        }
+
+        .slot-chart-count {
+            min-width: 2.1rem;
+            height: 2.1rem;
+            padding: 0 0.55rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            font-size: 1rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            color: var(--primary-foreground);
+            background: linear-gradient(135deg, var(--primary), hsl(200, 80%, 45%));
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+        }
+
+        .slot-chart-tip {
+            width: min(16rem, calc(100vw - 1rem));
+            max-height: calc(100vh - 1rem);
+            padding: 0.85rem 1rem 0.7rem;
+            border-radius: 0.85rem;
+            background: hsl(220, 28%, 11%);
+            border: 1px solid var(--border);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        .slot-chart-tip-title {
+            margin: 0 0 0.65rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--foreground);
+        }
+
+        .slot-chart-tip-empty {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--muted-foreground);
+        }
+
+        .slot-chart-names {
+            list-style: none;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+            gap: 0.2rem 0.85rem;
+            max-height: min(16rem, 50vh);
+            overflow: auto;
+            padding-right: 0.15rem;
+        }
+
+        .slot-chart-names li {
+            font-size: 0.92rem;
+            font-weight: 600;
+            line-height: 1.35;
+        }
+
         .icon {
             width: 1rem;
             height: 1rem;
@@ -1514,37 +1680,82 @@ $pageTitle = match ($page) {
                 </div>
             <?php endif; ?>
 
-            <div class="grid grid-3">
-                <?php foreach ($slots as $slot): ?>
-                    <?php
-                    $names = $participants[$slot['key']] ?? [];
-                    $mine = $member !== null && in_array($slot['key'], $member['slots'], true);
-                    ?>
-                    <div class="card slot-card<?= $mine ? ' is-mine' : '' ?>">
-                        <div class="slot-header">
-                            <div class="slot-number"><?= (int) $slot['id'] ?></div>
-                            <div>
-                                <h3 class="slot-day"><?= h($slot['day']) ?></h3>
-                                <div class="slot-time">
-                                    <span>🕐</span>
-                                    <span><?= h($slot['time']) ?></span>
-                                </div>
-                            </div>
-                        </div>
+            <?php
+            $slotRows = [];
+            $maxRunners = 0;
+            foreach ($slots as $slot) {
+                $names = $participants[$slot['key']] ?? [];
+                $count = count($names);
+                $maxRunners = max($maxRunners, $count);
+                $slotRows[] = $slot + ['names' => $names, 'count' => $count];
+            }
+            $yMax = max(1, $maxRunners);
+            $chartW = 960;
+            $chartH = 280;
+            $padL = 36;
+            $padR = 16;
+            $padT = 18;
+            $padB = 36;
+            $plotW = $chartW - $padL - $padR;
+            $plotH = $chartH - $padT - $padB;
+            $step = count($slotRows) > 1 ? $plotW / (count($slotRows) - 1) : 0;
+            $points = [];
+            foreach ($slotRows as $index => $row) {
+                $points[] = [
+                    'x' => $padL + $index * $step,
+                    'y' => $padT + $plotH - ($row['count'] / $yMax) * $plotH,
+                ];
+            }
+            $line = implode(' ', array_map(static fn (array $point): string => $point['x'] . ',' . $point['y'], $points));
+            $area = $line;
+            if ($points !== []) {
+                $area .= ' ' . $points[array_key_last($points)]['x'] . ',' . ($padT + $plotH);
+                $area .= ' ' . $points[0]['x'] . ',' . ($padT + $plotH);
+            }
+            $runnerLabel = static function (int $count): string {
+                if ($count === 0) {
+                    return 'aucun·e coureur·euse';
+                }
+                if ($count === 1) {
+                    return '1 coureur·euse';
+                }
 
-                        <div class="participants-list">
-                            <?php if ($names !== []): ?>
-                                <p class="participants-title">Participant·e·s :</p>
-                                <ul>
-                                    <?php foreach ($names as $name): ?>
-                                        <?php $isMe = $member !== null && mb_strtolower($name) === mb_strtolower($member['pseudo']); ?>
-                                        <li<?= $isMe ? ' class="is-me"' : '' ?>><?= h($name) ?></li>
-                                    <?php endforeach; ?>
-                                </ul>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
+                return $count . ' coureur·euse·s';
+            };
+            ?>
+            <div class="slot-chart">
+                <p class="slot-chart-title">Coureur·euse·s par créneau</p>
+                <div class="slot-chart-scroll">
+                    <svg viewBox="0 0 <?= $chartW ?> <?= $chartH ?>" role="img" aria-label="Nombre de coureur·euse·s sur chaque créneau">
+                        <?php for ($tick = 0; $tick <= $yMax; $tick += ($yMax > 4 ? (int) ceil($yMax / 4) : 1)): ?>
+                            <?php $tickY = $padT + $plotH - ($tick / $yMax) * $plotH; ?>
+                            <line class="slot-grid" x1="<?= $padL ?>" y1="<?= $tickY ?>" x2="<?= $chartW - $padR ?>" y2="<?= $tickY ?>"></line>
+                            <text x="<?= $padL - 8 ?>" y="<?= $tickY + 4 ?>" text-anchor="end"><?= $tick ?></text>
+                        <?php endfor; ?>
+                        <polygon class="slot-area" points="<?= h($area) ?>"></polygon>
+                        <polyline class="slot-line" points="<?= h($line) ?>"></polyline>
+                        <?php foreach ($slotRows as $index => $row): ?>
+                            <?php
+                            $hour = substr($row['time'], 0, 2) . 'h';
+                            $label = $row['time'];
+                            ?>
+                            <text x="<?= $points[$index]['x'] ?>" y="<?= $chartH - 10 ?>" text-anchor="middle"><?= h($hour) ?></text>
+                            <circle
+                                class="slot-point<?= $row['count'] === 0 ? ' is-empty' : '' ?>"
+                                cx="<?= $points[$index]['x'] ?>"
+                                cy="<?= $points[$index]['y'] ?>"
+                                r="<?= $row['count'] === 0 ? 4 : 6 ?>"
+                                tabindex="0"
+                                data-label="<?= h($label) ?>"
+                                data-count="<?= (int) $row['count'] ?>"
+                                data-names="<?= h(json_encode($row['names'], JSON_UNESCAPED_UNICODE)) ?>"
+                                aria-label="<?= h($label . ', ' . $runnerLabel($row['count']) . ($row['names'] === [] ? '' : ' : ' . implode(', ', $row['names']))) ?>"
+                            ></circle>
+                        <?php endforeach; ?>
+                    </svg>
+                </div>
+                <div class="slot-chart-count" hidden></div>
+                <div class="slot-chart-tip" hidden></div>
             </div>
         </div>
     </section>
@@ -1681,6 +1892,89 @@ $pageTitle = match ($page) {
             } else if (location.hash === '#editions') {
                 location.replace('/resultat');
             }
+        }
+
+        const slotChart = document.querySelector('.slot-chart');
+        if (slotChart) {
+            const tip = slotChart.querySelector('.slot-chart-tip');
+            const countEl = slotChart.querySelector('.slot-chart-count');
+            const margin = 8;
+
+            const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+
+            const placeTip = (point) => {
+                let names = [];
+                try {
+                    names = JSON.parse(point.dataset.names || '[]');
+                } catch (error) {
+                    names = [];
+                }
+                const count = Number(point.dataset.count || 0);
+                const cols = names.length > 18 ? 3 : (names.length > 8 ? 2 : 1);
+                tip.style.width = names.length === 0
+                    ? 'min(14rem, calc(100vw - 1rem))'
+                    : `min(${cols * 8.75}rem, calc(100vw - 1rem))`;
+                countEl.textContent = String(count);
+
+                tip.replaceChildren();
+                const title = document.createElement('p');
+                title.className = 'slot-chart-tip-title';
+                title.textContent = point.dataset.label || '';
+                tip.appendChild(title);
+                if (names.length === 0) {
+                    const empty = document.createElement('p');
+                    empty.className = 'slot-chart-tip-empty';
+                    empty.textContent = 'Personne pour l’instant';
+                    tip.appendChild(empty);
+                } else {
+                    const list = document.createElement('ul');
+                    list.className = 'slot-chart-names';
+                    names.forEach((name) => {
+                        const item = document.createElement('li');
+                        item.textContent = name;
+                        list.appendChild(item);
+                    });
+                    tip.appendChild(list);
+                }
+
+                countEl.hidden = false;
+                tip.hidden = false;
+
+                const pointBox = point.getBoundingClientRect();
+                const countBox = countEl.getBoundingClientRect();
+                countEl.style.left = clamp(
+                    pointBox.left + pointBox.width / 2 - countBox.width / 2,
+                    margin,
+                    window.innerWidth - countBox.width - margin
+                ) + 'px';
+                let countTop = pointBox.top - countBox.height - 10;
+                if (countTop < margin) {
+                    countTop = pointBox.bottom + 10;
+                }
+                countEl.style.top = countTop + 'px';
+
+                const tipBox = tip.getBoundingClientRect();
+                const roomRight = window.innerWidth - pointBox.right - 16;
+                const roomLeft = pointBox.left - 16;
+                let tipLeft = roomRight >= tipBox.width || roomRight >= roomLeft
+                    ? pointBox.right + 16
+                    : pointBox.left - tipBox.width - 16;
+                tipLeft = clamp(tipLeft, margin, window.innerWidth - tipBox.width - margin);
+                let tipTop = pointBox.top + pointBox.height / 2 - tipBox.height / 2;
+                tipTop = clamp(tipTop, margin, window.innerHeight - tipBox.height - margin);
+                tip.style.left = tipLeft + 'px';
+                tip.style.top = tipTop + 'px';
+            };
+            const hideTip = () => {
+                tip.hidden = true;
+                countEl.hidden = true;
+            };
+            slotChart.querySelectorAll('.slot-point').forEach((point) => {
+                point.addEventListener('mouseenter', () => placeTip(point));
+                point.addEventListener('focus', () => placeTip(point));
+                point.addEventListener('mouseleave', hideTip);
+                point.addEventListener('blur', hideTip);
+            });
         }
 
         const yearTabs = document.querySelector('.year-tabs');
